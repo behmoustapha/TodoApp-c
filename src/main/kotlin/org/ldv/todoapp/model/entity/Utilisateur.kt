@@ -25,7 +25,11 @@ open class Utilisateur(
 
     // Repère technique réservé au jeu de démonstration, absent des formulaires.
     @Column(name = "reference_demo", unique = true, length = 50)
-    open var referenceDemo: String? = null
+    open var referenceDemo: String? = null,
+
+    // Les comptes issus du TP 2 peuvent exister sans empreinte.
+    @Column(name = "empreinte_mot_de_passe", length = 100)
+    open var empreinteMotDePasse: String? = null
 ) {
     // La suppression du propriétaire supprime ses tâches, mais jamais son rôle.
     // REMOVE uniquement : une réaffectation ne doit pas supprimer la tâche.

@@ -7,6 +7,7 @@ import org.ldv.todoapp.model.repository.RoleRepository
 import org.ldv.todoapp.model.repository.UtilisateurRepository
 import org.ldv.todoapp.model.repository.TacheRepository
 import org.springframework.boot.CommandLineRunner
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -15,7 +16,8 @@ import java.time.LocalDate
 class DataInitializer(
     private val roleRepository: RoleRepository,
     private val utilisateurRepository: UtilisateurRepository,
-    private val tacheRepository: TacheRepository
+    private val tacheRepository: TacheRepository,
+    private val passwordEncoder: PasswordEncoder
 ) : CommandLineRunner {
 
     @Transactional
@@ -33,19 +35,24 @@ class DataInitializer(
             }
         }
 
-        fun initialiserUtilisateur(reference: String, donnees: Utilisateur): Utilisateur {
-            utilisateurRepository.findByReferenceDemo(reference)?.let { return it }
-
+        fun initialiserUtilisateur(reference: String, motDePasse: String, donnees: Utilisateur): Utilisateur {
+            val existant = utilisateurRepository.findByReferenceDemo(reference)
             // Reprise du jeu fourni au TP 1, qui ne possédait pas encore de repère.
-            val existant = utilisateurRepository.findByEmail(donnees.email)
-            if (existant != null) {
-                check(existant.referenceDemo == null) {
-                    "L'email ${donnees.email} est déjà associé à une autre référence de démonstration."
-                }
-                existant.referenceDemo = reference
-                return utilisateurRepository.save(existant)
-            }
+                ?: utilisateurRepository.findByEmail(donnees.email)
+            val utilisateur = existant ?: donnees
+            check(utilisateur.referenceDemo == null || utilisateur.referenceDemo == reference) {
+                "L'email ${utilisateur.email} est déjà associé à une autre référence de démonstration."
 
+
+            utilisateur.referenceDemo = reference
+            if (utilisateur.empreinteMotDePasse == null) {
+                utilisateur.empreinteMotDePasse = passwordEncoder.encode(motDePasse)
+            }
+            if (existant == null) {
+                utilisateursAjoutes++
+            }
+            return utilisateurRepository.save(utilisateur)
+        }
             donnees.referenceDemo = reference
             utilisateursAjoutes++
             return utilisateurRepository.save(donnees)
@@ -55,7 +62,7 @@ class DataInitializer(
         val roleAdmin = initialiserRole("ROLE_ADMIN")
 
         // 2. Création des utilisateurs
-        val alice = initialiserUtilisateur("alice",
+        val alice = initialiserUtilisateur("alice","test",
             Utilisateur(
                 nom = "Martin",
                 prenom = "Alice",
@@ -64,7 +71,7 @@ class DataInitializer(
             )
         )
 
-        val bob = initialiserUtilisateur("bob",
+        val bob = initialiserUtilisateur("bob","test2",
             Utilisateur(
                 nom = "Durand",
                 prenom = "Bob",
@@ -73,7 +80,7 @@ class DataInitializer(
             )
         )
 
-        val claire = initialiserUtilisateur("claire",
+        val claire = initialiserUtilisateur("claire","test3",
             Utilisateur(
                 nom = "Bernard",
                 prenom = "Claire",
@@ -82,7 +89,7 @@ class DataInitializer(
             )
         )
 
-        val admin = initialiserUtilisateur("admin",
+        val admin = initialiserUtilisateur("admin","test4",
             Utilisateur(
                 nom = "Admin",
                 prenom = "TodoApp",
